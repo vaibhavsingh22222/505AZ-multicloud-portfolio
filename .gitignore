@@ -1,0 +1,13 @@
+# Environment and secret files
+.env
+.env.*
+!.env.example
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Temporary files
+*.log
+.DS_Store
+Thumbs.db
