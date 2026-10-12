@@ -1,2 +1,3 @@
-# VPC infrastructure template
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Network infrastructure for the multicloud portfolio
 
