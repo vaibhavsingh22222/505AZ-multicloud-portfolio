@@ -1,3 +1,226 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Network infrastructure for the multicloud portfolio
 
+Resources:
+  WebVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.10.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Web-Services-VPC
+
+  PrivateVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.20.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Private-Services-VPC
+
+  WebPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.1.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Public-Subnet-1
+
+  WebPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.2.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Public-Subnet-2
+
+  WebPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.11.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Private-Subnet-1
+
+  WebPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.12.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Private-Subnet-2
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: 10.20.1.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Private-Subnet-1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: 10.20.2.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Private-Subnet-2
+
+  TransitGateway:
+    Type: AWS::EC2::TransitGateway
+    Properties:
+      Description: Transit Gateway for the two VPCs
+      Tags:
+        - Key: Name
+          Value: Portfolio-Transit-Gateway
+
+  WebVPCAttachment:
+    Type: AWS::EC2::TransitGatewayVpcAttachment
+    DependsOn:
+      - WebPrivateSubnet1
+      - WebPrivateSubnet2
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      VpcId: !Ref WebVPC
+      SubnetIds:
+        - !Ref WebPrivateSubnet1
+        - !Ref WebPrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: Web-VPC-TGW-Attachment
+
+  PrivateVPCAttachment:
+    Type: AWS::EC2::TransitGatewayVpcAttachment
+    DependsOn:
+      - PrivateSubnet1
+      - PrivateSubnet2
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      VpcId: !Ref PrivateVPC
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: Private-VPC-TGW-Attachment
+
+  TransitGatewayRouteTable:
+    Type: AWS::EC2::TransitGatewayRouteTable
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      Tags:
+        - Key: Name
+          Value: Portfolio-TGW-Route-Table
+
+  WebPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WebVPC
+      Tags:
+        - Key: Name
+          Value: Web-Private-Route-Table
+
+  PrivateServicesRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrivateVPC
+      Tags:
+        - Key: Name
+          Value: Private-Services-Route-Table
+
+  WebPrivateSubnet1RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref WebPrivateSubnet1
+      RouteTableId: !Ref WebPrivateRouteTable
+
+  WebPrivateSubnet2RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref WebPrivateSubnet2
+      RouteTableId: !Ref WebPrivateRouteTable
+
+  PrivateSubnet1RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateServicesRouteTable
+
+  PrivateSubnet2RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateServicesRouteTable
+
+  WebToPrivateRoute:
+    Type: AWS::EC2::Route
+    DependsOn: WebVPCAttachment
+    Properties:
+      RouteTableId: !Ref WebPrivateRouteTable
+      DestinationCidrBlock: 10.20.0.0/16
+      TransitGatewayId: !Ref TransitGateway
+
+  PrivateToWebRoute:
+    Type: AWS::EC2::Route
+    DependsOn: PrivateVPCAttachment
+    Properties:
+      RouteTableId: !Ref PrivateServicesRouteTable
+      DestinationCidrBlock: 10.10.0.0/16
+      TransitGatewayId: !Ref TransitGateway
+
+  WebTGWRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    DependsOn:
+      - WebVPCAttachment
+      - PrivateVPCAttachment
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+      DestinationCidrBlock: 10.10.0.0/16
+      TransitGatewayAttachmentId: !Ref WebVPCAttachment
+
+  PrivateTGWRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    DependsOn:
+      - WebVPCAttachment
+      - PrivateVPCAttachment
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+      DestinationCidrBlock: 10.20.0.0/16
+      TransitGatewayAttachmentId: !Ref PrivateVPCAttachment
+
+  WebTGWRouteTableAssociation:
+    Type: AWS::EC2::TransitGatewayRouteTableAssociation
+    DependsOn: WebVPCAttachment
+    Properties:
+      TransitGatewayAttachmentId: !Ref WebVPCAttachment
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+  PrivateTGWRouteTableAssociation:
+    Type: AWS::EC2::TransitGatewayRouteTableAssociation
+    DependsOn: PrivateVPCAttachment
+    Properties:
+      TransitGatewayAttachmentId: !Ref PrivateVPCAttachment
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
