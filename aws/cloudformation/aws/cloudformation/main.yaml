@@ -1,9 +1,0 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: '505AZ orchestration plan - STUDENT STARTER, NOT DEPLOYABLE'
-
-# TODO (student-authored): choose nested stacks, separate stacks with exports,
-# or a consolidated template after reviewing course guidance.
-# Deployment order often: network -> security -> database/compute.
-# Resolve dependencies carefully and test with CloudFormation validation.
-# IMPORTANT: This starter contains no resource definitions and is NOT ready
-# for stack creation or deployment.
