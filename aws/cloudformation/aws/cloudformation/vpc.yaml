@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '505AZ network template - STUDENT STARTER, NOT DEPLOYABLE'
+
+# ASSIGNMENT DESIGN NOTES
+# Existing manual environment (do not deploy duplicates):
+# Web VPC: 10.10.0.0/16
+# Private VPC: 10.20.0.0/16
+# Web public subnets: 10.10.1.0/24 (us-east-1c), 10.10.2.0/24 (us-east-1d)
+# Also created: 2 Web private subnets and 2 Private Services subnets.
+# Enter their exact CIDRs after checking the AWS console.
+# Your manual build used a Transit Gateway, but the assessment brief calls for VPC peering.
+# Ask your tutor which design to use for the assessed deployment.
+
+Parameters:
+  WebVpcCidr:
+    Type: String
+    Default: 10.10.0.0/16
+  PrivateVpcCidr:
+    Type: String
+    Default: 10.20.0.0/16
+
+# TODO (student-authored): add Resources and Outputs below.
+# Required topics:
+# - AWS::EC2::VPC (two VPCs)
+# - AWS::EC2::Subnet (public and private, across at least two AZs)
+# - AWS::EC2::InternetGateway, VPCGatewayAttachment
+# - AWS::EC2::RouteTable, Route, SubnetRouteTableAssociation
+# - AWS::EC2::VPCPeeringConnection as the brief requires, OR TransitGateway
+#   and TransitGatewayAttachment if approved by tutor.
+# - Private networking routes between web and database tiers.
+# IMPORTANT: An IGW route does not give an instance internet access without
+# a public IP; private web servers normally need NAT for package downloads.

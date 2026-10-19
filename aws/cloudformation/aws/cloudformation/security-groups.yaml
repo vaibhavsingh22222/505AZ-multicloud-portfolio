@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '505AZ security groups - STUDENT STARTER, NOT DEPLOYABLE'
+
+# TODO (student-authored): define security groups with AWS::EC2::SecurityGroup.
+# Required security relationships:
+# Internet -> ALB: HTTP 80 (HTTPS 443 when configured).
+# ALB SG -> Web SG: HTTP 80.
+# Web SG -> RDS SG: database port, e.g. 3306 (MySQL) or 5432 (PostgreSQL).
+# Management SG -> diagnostic destinations: tightly scoped SSH/ICMP.
+# No public DB ingress and no unrestricted management SSH.
+# Manual Web SG was sg-0b42d94cdeb849f9d.
+# Manual ALB SG was sg-0baea9a104a642d22.
+# Do not hard-code these IDs in a fresh stack; use stack references instead.

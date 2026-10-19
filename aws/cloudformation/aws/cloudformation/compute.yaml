@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '505AZ compute and web tier - STUDENT STARTER, NOT DEPLOYABLE'
+
+# TODO (student-authored): define:
+# - AWS::ElasticLoadBalancingV2::LoadBalancer (internet-facing; public subnets)
+# - AWS::ElasticLoadBalancingV2::TargetGroup (HTTP/80; path /)
+# - AWS::ElasticLoadBalancingV2::Listener
+# - AWS::EC2::LaunchTemplate (Amazon Linux 2023, t3.micro, user data)
+# - AWS::AutoScaling::AutoScalingGroup (private web subnets per brief)
+# - AWS::AutoScaling::ScalingPolicy (target tracking at 50% CPU, if appropriate)
+# - AWS::EC2::Instance for management in private services VPC
+# Remember: if private web instances install software at first boot,
+# provide outbound internet via NAT or another supported mechanism.
+# Existing manual ALB: Web-Application-ALB
+# Existing manual ASG: Web-Server-Auto-Scaling-Group
+# Launch template: Web-Server-Launch-Template (version 3 observed)
+# Existing target group: Web-Target-Group
