@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: '505AZ database tier - STUDENT STARTER, NOT DEPLOYABLE'
+
+# TODO (student-authored): define:
+# - AWS::RDS::DBSubnetGroup using private services VPC subnets in two AZs
+# - AWS::RDS::DBInstance (primary database, publicly inaccessible)
+# - AWS::RDS::DBInstance (read replica using SourceDBInstanceIdentifier)
+# - Credential handling via Secrets Manager / dynamic references, not plaintext
+# - Restrictive DB security group allowing web-to-database on DB port only
+# - Backup/retention and deletion protection suitable for lab requirements

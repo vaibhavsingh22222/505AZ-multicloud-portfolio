@@ -1,0 +1,245 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Network infrastructure for the multicloud portfolio
+
+# RECOVERY NOTES (not CloudFormation resources):
+# Reconstructed from the user's existing GitHub content pasted in chat.
+# The original pasted text ended at an incomplete property; its !Ref is restored.
+# THIS IS AN INCOMPLETE NETWORK DESIGN: no IGW/public route table, etc.
+# DO NOT DEPLOY as a new stack on top of the pre-existing manual environment.
+# The module brief specifically requests VPC peering; this template uses TGW.
+# Verify this alternative with the tutor before assessed deployment.
+# The manually created public subnets were in us-east-1c and us-east-1d;
+# this source code uses us-east-1a and us-east-1b. Check your own design.
+# Transit Gateway defaults can clash with explicit table association/propagation.
+
+Resources:
+  WebVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.10.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Web-Services-VPC
+
+  PrivateVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.20.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Private-Services-VPC
+
+  WebPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.1.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Public-Subnet-1
+
+  WebPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.2.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Public-Subnet-2
+
+  WebPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.11.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Private-Subnet-1
+
+  WebPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WebVPC
+      CidrBlock: 10.10.12.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Web-Private-Subnet-2
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: 10.20.1.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Private-Subnet-1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: 10.20.2.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Private-Subnet-2
+
+  TransitGateway:
+    Type: AWS::EC2::TransitGateway
+    Properties:
+      Description: Transit Gateway for the two VPCs
+      Tags:
+        - Key: Name
+          Value: Portfolio-Transit-Gateway
+
+  WebVPCAttachment:
+    Type: AWS::EC2::TransitGatewayVpcAttachment
+    DependsOn:
+      - WebPrivateSubnet1
+      - WebPrivateSubnet2
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      VpcId: !Ref WebVPC
+      SubnetIds:
+        - !Ref WebPrivateSubnet1
+        - !Ref WebPrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: Web-VPC-TGW-Attachment
+
+  PrivateVPCAttachment:
+    Type: AWS::EC2::TransitGatewayVpcAttachment
+    DependsOn:
+      - PrivateSubnet1
+      - PrivateSubnet2
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      VpcId: !Ref PrivateVPC
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: Private-VPC-TGW-Attachment
+
+  TransitGatewayRouteTable:
+    Type: AWS::EC2::TransitGatewayRouteTable
+    Properties:
+      TransitGatewayId: !Ref TransitGateway
+      Tags:
+        - Key: Name
+          Value: Portfolio-TGW-Route-Table
+
+  WebPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WebVPC
+      Tags:
+        - Key: Name
+          Value: Web-Private-Route-Table
+
+  PrivateServicesRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrivateVPC
+      Tags:
+        - Key: Name
+          Value: Private-Services-Route-Table
+
+  WebPrivateSubnet1RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref WebPrivateSubnet1
+      RouteTableId: !Ref WebPrivateRouteTable
+
+  WebPrivateSubnet2RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref WebPrivateSubnet2
+      RouteTableId: !Ref WebPrivateRouteTable
+
+  PrivateSubnet1RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateServicesRouteTable
+
+  PrivateSubnet2RouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateServicesRouteTable
+
+  WebToPrivateRoute:
+    Type: AWS::EC2::Route
+    DependsOn: WebVPCAttachment
+    Properties:
+      RouteTableId: !Ref WebPrivateRouteTable
+      DestinationCidrBlock: 10.20.0.0/16
+      TransitGatewayId: !Ref TransitGateway
+
+  PrivateToWebRoute:
+    Type: AWS::EC2::Route
+    DependsOn: PrivateVPCAttachment
+    Properties:
+      RouteTableId: !Ref PrivateServicesRouteTable
+      DestinationCidrBlock: 10.10.0.0/16
+      TransitGatewayId: !Ref TransitGateway
+
+  WebTGWRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    DependsOn:
+      - WebVPCAttachment
+      - PrivateVPCAttachment
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+      DestinationCidrBlock: 10.10.0.0/16
+      TransitGatewayAttachmentId: !Ref WebVPCAttachment
+
+  PrivateTGWRoute:
+    Type: AWS::EC2::TransitGatewayRoute
+    DependsOn:
+      - WebVPCAttachment
+      - PrivateVPCAttachment
+    Properties:
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+      DestinationCidrBlock: 10.20.0.0/16
+      TransitGatewayAttachmentId: !Ref PrivateVPCAttachment
+
+  WebTGWRouteTableAssociation:
+    Type: AWS::EC2::TransitGatewayRouteTableAssociation
+    DependsOn: WebVPCAttachment
+    Properties:
+      TransitGatewayAttachmentId: !Ref WebVPCAttachment
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+  PrivateTGWRouteTableAssociation:
+    Type: AWS::EC2::TransitGatewayRouteTableAssociation
+    DependsOn: PrivateVPCAttachment
+    Properties:
+      TransitGatewayAttachmentId: !Ref PrivateVPCAttachment
+      TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+# TODO STUDENT AUTHORED: before deployment finish the following and review
+# dependencies against the final design:
+# AWS::EC2::InternetGateway, AWS::EC2::VPCGatewayAttachment,
+# public route table + 0.0.0.0/0 IGW route, both public subnet associations.
+# Decide whether to use VPC peering as brief requires or obtain TGW approval.
+# Avoid conflicting automatic/explicit TGW route-table associations.
+# Validate and test network routes in an isolated environment, not on your
+# current manually created AWS resources.
